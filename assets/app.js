@@ -1,5 +1,9 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
+const tackyBot = Object.freeze({
+  name: "Tacky",
+  clientId: "1507476688228061304"
+});
 const defaultGuildId = "";
 const defaultConfig = {
   guildId: defaultGuildId,
@@ -75,7 +79,7 @@ const navItems = [
   ["tickets", "Ticket", "Tickets"],
   ["commissions", "BadgeDollarSign", "Commissions"],
   ["admins", "UsersRound", "Admins"],
-  ["bots", "Bot", "Future Bots"],
+  ["bots", "Bot", "Tacky Bot"],
   ["setup", "BookOpen", "Setup"]
 ];
 
@@ -103,6 +107,39 @@ function deepMerge(base, override) {
     }
   }
   return output;
+}
+
+function normalizeBrand(value) {
+  const oldBrand = ["Clovi", "x"].join("");
+  if (typeof value === "string") return value.replaceAll(oldBrand, "Clovic").replaceAll(oldBrand.toLowerCase(), "clovic");
+  if (Array.isArray(value)) return value.map((item) => normalizeBrand(item));
+  if (value && typeof value === "object") {
+    const output = {};
+    for (const [key, item] of Object.entries(value)) output[key] = normalizeBrand(item);
+    return output;
+  }
+  return value;
+}
+
+function isTackyOnline() {
+  const status = state.status;
+  const stale = status?.last_seen_at ? Date.now() - new Date(status.last_seen_at).getTime() > 120000 : true;
+  return Boolean(status?.is_in_guild) && !stale && String(status?.bot_client_id || "") === tackyBot.clientId;
+}
+
+function lockedMessage() {
+  const status = state.status;
+  if (status?.bot_client_id && String(status.bot_client_id) !== tackyBot.clientId) {
+    return "This dashboard only works with Tacky Bot. The bot connected to this server is not Tacky.";
+  }
+  if (status?.is_in_guild && status?.last_seen_at && Date.now() - new Date(status.last_seen_at).getTime() > 120000) {
+    return "Tacky Bot has not checked in recently. Start the bot, then refresh this dashboard.";
+  }
+  return "Tacky Bot is not added to this Discord server. Dashboard controls are locked.";
+}
+
+function requireTackyOnline() {
+  if (!isTackyOnline()) throw new Error(lockedMessage());
 }
 
 function supabaseSettings() {
@@ -203,8 +240,7 @@ function renderAuth() {
 
 function renderApp() {
   const status = state.status;
-  const stale = status?.last_seen_at ? Date.now() - new Date(status.last_seen_at).getTime() > 120000 : true;
-  const botOk = Boolean(status?.is_in_guild) && !stale;
+  const botOk = isTackyOnline();
   app.innerHTML = `
     <div class="shell">
       <aside class="sidebar">
@@ -228,13 +264,14 @@ function renderApp() {
             <button class="icon-btn" id="logout" title="Sign out">${icon("LogOut")}</button>
           </div>
         </div>
-        ${botOk ? `<div class="alert ok">Tacky is online in ${html(status.guild_name || "this server")} and checked in ${new Date(status.last_seen_at).toLocaleString()}.</div>` : `<div class="alert danger">Bot is not added to this server.</div>`}
+        ${botOk ? `<div class="alert ok">Tacky Bot is online in ${html(status.guild_name || "this server")} and checked in ${new Date(status.last_seen_at).toLocaleString()}.</div>` : `<div class="alert danger">${html(lockedMessage())}</div>`}
         ${state.loading ? `<div class="alert">Loading server data...</div>` : renderTab()}
       </main>
     </div>`;
 }
 
 function renderTab() {
+  if (!isTackyOnline() && !["overview", "bots", "setup"].includes(state.tab)) return renderLocked();
   if (state.tab === "overview") return renderOverview();
   if (state.tab === "config") return renderConfig();
   if (state.tab === "panels") return renderPanels();
@@ -246,21 +283,31 @@ function renderTab() {
   return renderSetup();
 }
 
+function renderLocked() {
+  return `
+    <section class="panel">
+      <h2>Locked</h2>
+      <p>${html(lockedMessage())}</p>
+      <p>Invite Tacky Bot to the server, start the bot host, then refresh this dashboard.</p>
+    </section>`;
+}
+
 function renderOverview() {
   const config = state.config || defaultConfig;
+  const locked = !isTackyOnline() ? "disabled" : "";
   return `
     <section class="grid">
       ${stat("Guild ID", state.guildId, "Server being edited")}
-      ${stat("Bot Status", state.status?.is_in_guild ? "Connected" : "Not Added", "Live Discord presence")}
+      ${stat("Bot Status", isTackyOnline() ? "Tacky Online" : "Locked", "Live Discord presence")}
       ${stat("Tickets", state.tickets.length, "Tracked tickets")}
       ${stat("Commands", state.commands.length, "Dashboard command actions")}
       <div class="panel span-8">
         <h2>Quick Publish</h2>
         <p>These buttons queue work for the bot. GitHub Pages never touches your bot token.</p>
         <div class="actions">
-          <button class="btn primary" data-panel="ticket">${icon("Ticket")} Send Ticket Panel</button>
-          <button class="btn primary" data-panel="commission">${icon("BadgeDollarSign")} Send Commission Panel</button>
-          <button class="btn primary" data-panel="verification">${icon("ShieldCheck")} Send Verification Panel</button>
+          <button class="btn primary" data-panel="ticket" ${locked}>${icon("Ticket")} Send Ticket Panel</button>
+          <button class="btn primary" data-panel="commission" ${locked}>${icon("BadgeDollarSign")} Send Commission Panel</button>
+          <button class="btn primary" data-panel="verification" ${locked}>${icon("ShieldCheck")} Send Verification Panel</button>
         </div>
       </div>
       <div class="panel span-4">
@@ -485,19 +532,10 @@ function renderAdmins() {
 function renderBots() {
   return `
     <section class="grid">
-      <form class="panel span-5" id="future-bot-form">
-        <h2>Add Future Bot</h2>
-        <p>This creates dashboard rows only. Put the new bot token in that bot host's .env file, never in GitHub Pages.</p>
-        <div class="form-grid">
-          ${field("Guild ID", "guild_id", "")}
-          ${field("Client ID", "client_id", "")}
-          ${field("Bot Name", "bot_name", "")}
-        </div>
-        <div class="actions"><button class="btn primary" type="submit">${icon("Bot")} Add Dashboard Slot</button></div>
-      </form>
-      <div class="panel span-7">
-        <h2>Current Bot Status</h2>
-        ${table(["Guild", "Bot", "Client", "Online", "Last Seen"], state.status ? [[state.status.guild_id, state.status.bot_name || "Tacky", state.status.bot_client_id || "", pill(state.status.is_in_guild ? "yes" : "no", state.status.is_in_guild), state.status.last_seen_at ? new Date(state.status.last_seen_at).toLocaleString() : "Never"]] : [])}
+      <div class="panel span-12">
+        <h2>Tacky Bot Status</h2>
+        <p>This dashboard is locked to Tacky Bot and will not control other Discord bots.</p>
+        ${table(["Guild", "Bot", "Client", "Allowed", "Online", "Last Seen"], state.status ? [[state.status.guild_id, state.status.bot_name || "Tacky", state.status.bot_client_id || "", pill(String(state.status.bot_client_id || "") === tackyBot.clientId ? "Tacky" : "Wrong bot", String(state.status.bot_client_id || "") === tackyBot.clientId), pill(isTackyOnline() ? "yes" : "no", isTackyOnline()), state.status.last_seen_at ? new Date(state.status.last_seen_at).toLocaleString() : "Never"]] : [])}
       </div>
     </section>`;
 }
@@ -581,7 +619,8 @@ function configFromForm(form) {
 }
 
 async function saveConfig(next, message = "Configuration saved") {
-  state.config = deepMerge(defaultConfig, next);
+  requireTackyOnline();
+  state.config = normalizeBrand(deepMerge(defaultConfig, next));
   const { error } = await state.supabase.from("guild_configs").upsert({
     guild_id: state.guildId,
     config: state.config,
@@ -593,6 +632,7 @@ async function saveConfig(next, message = "Configuration saved") {
 }
 
 async function queuePanel(panelType) {
+  requireTackyOnline();
   const { error } = await state.supabase.from("dashboard_tasks").insert({
     guild_id: state.guildId,
     type: "send_panel",
@@ -629,7 +669,7 @@ async function loadGuild(repaint = true) {
     state.supabase.from("dashboard_members").select("*").in("guild_id", [state.guildId, "*"]).order("created_at", { ascending: false }).limit(100)
   ]);
   if (configResult.error && configResult.error.code !== "PGRST116") toast(configResult.error.message);
-  state.config = deepMerge(defaultConfig, configResult.data?.config || { guildId: state.guildId });
+  state.config = normalizeBrand(deepMerge(defaultConfig, configResult.data?.config || { guildId: state.guildId }));
   state.status = statusResult.data || null;
   state.tickets = ticketResult.data || [];
   state.commissions = commissionResult.data || [];
@@ -683,10 +723,12 @@ document.addEventListener("submit", async (event) => {
       return;
     }
     if (["config-form", "ticket-panel-form", "commission-panel-form", "verification-panel-form"].includes(event.target.id)) {
+      requireTackyOnline();
       await saveConfig(configFromForm(event.target));
       return;
     }
     if (event.target.id === "command-form") {
+      requireTackyOnline();
       const data = new FormData(event.target);
       const id = data.get("id");
       const patch = {
@@ -705,6 +747,7 @@ document.addEventListener("submit", async (event) => {
       return;
     }
     if (event.target.id === "admin-form") {
+      requireTackyOnline();
       const data = new FormData(event.target);
       const { error } = await state.supabase.from("dashboard_members").insert({
         guild_id: state.guildId,
@@ -715,24 +758,6 @@ document.addEventListener("submit", async (event) => {
       toast("Dashboard access added");
       await loadGuild();
       return;
-    }
-    if (event.target.id === "future-bot-form") {
-      const data = new FormData(event.target);
-      const guildId = String(data.get("guild_id")).trim();
-      const clientId = String(data.get("client_id")).trim();
-      const botName = String(data.get("bot_name")).trim() || "Tacky";
-      const config = deepMerge(defaultConfig, { guildId });
-      const email = state.session.user.email.toLowerCase();
-      const results = await Promise.all([
-        state.supabase.from("guild_configs").upsert({ guild_id: guildId, config, updated_at: new Date().toISOString() }),
-        state.supabase.from("bot_status").upsert({ guild_id: guildId, bot_client_id: clientId, bot_name: botName, is_in_guild: false }),
-        state.supabase.from("dashboard_members").upsert({ guild_id: guildId, email, role: "owner" })
-      ]);
-      const error = results.find((result) => result.error)?.error;
-      if (error) throw error;
-      toast("Future bot dashboard slot added");
-      state.guildId = guildId;
-      await loadGuild();
     }
   } catch (error) {
     toast(error.message || "Something went wrong");
