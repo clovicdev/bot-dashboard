@@ -394,7 +394,7 @@ function renderPanels() {
         <div class="form-grid">
           ${field("Title", "ticketPanel.title", c.ticketPanel.title)}
           ${field("Dropdown Placeholder", "ticketPanel.placeholder", c.ticketPanel.placeholder)}
-          ${field("Message", "ticketPanel.message", c.ticketPanel.message, "textarea full")}
+          ${field("Message", "ticketPanel.message", c.ticketPanel.message, "textarea full format")}
         </div>
         <h3>Dropdown Options</h3>
         <div class="form-grid">
@@ -415,7 +415,7 @@ function renderPanels() {
           ${field("Title", "commissionPanel.title", c.commissionPanel.title)}
           ${field("Button Label", "commissionPanel.buttonLabel", c.commissionPanel.buttonLabel)}
           ${field("Review Embed Title", "commissionPanel.reviewTitle", c.commissionPanel.reviewTitle)}
-          ${field("Message", "commissionPanel.message", c.commissionPanel.message, "textarea full")}
+          ${field("Message", "commissionPanel.message", c.commissionPanel.message, "textarea full format")}
         </div>
         <div class="actions">
           <button class="btn primary" type="submit">${icon("Save")} Save Commission Panel</button>
@@ -430,7 +430,7 @@ function renderPanels() {
           ${field("Button Label", "verification.buttonLabel", c.verification.buttonLabel)}
           ${field("Webhook Name", "verification.webhookName", c.verification.webhookName)}
           ${field("Webhook Avatar URL", "verification.webhookAvatarUrl", c.verification.webhookAvatarUrl)}
-          ${field("Message", "verification.message", c.verification.message, "textarea full")}
+          ${field("Message", "verification.message", c.verification.message, "textarea full format")}
         </div>
         <div class="actions">
           <button class="btn primary" type="submit">${icon("Save")} Save Verification Panel</button>
@@ -586,9 +586,23 @@ function ticketTypeFields(type, index) {
 function field(label, name, value, type = "text") {
   const full = type.includes("full") ? " full" : "";
   if (type.includes("textarea")) {
-    return `<div class="field${full}"><label>${html(label)}</label><textarea name="${attr(name)}">${html(value)}</textarea></div>`;
+    const toolbar = type.includes("format") ? formatToolbar() : "";
+    return `<div class="field${full}"><label>${html(label)}</label>${toolbar}<textarea name="${attr(name)}">${html(value)}</textarea></div>`;
   }
   return `<div class="field${full}"><label>${html(label)}</label><input name="${attr(name)}" value="${attr(value)}"></div>`;
+}
+
+function formatToolbar() {
+  const tools = [
+    ["bold", "Bold", "Bold"],
+    ["italic", "Italic", "Italic"],
+    ["underline", "Underline", "Underline"],
+    ["strike", "Strikethrough", "Strikethrough"],
+    ["code", "Code", "Code"],
+    ["quote", "Quote", "Quote"],
+    ["list", "List", "List"]
+  ];
+  return `<div class="format-toolbar">${tools.map(([format, label, iconName]) => `<button class="icon-btn format-btn" type="button" data-format="${format}" title="${label}" aria-label="${label}">${icon(iconName)}</button>`).join("")}</div>`;
 }
 
 function pill(text, good) {
@@ -607,6 +621,49 @@ function cellContent(cell) {
 
 function taskTable(tasks) {
   return table(["Type", "Status", "Created", "Error"], tasks.map((task) => [task.type, pill(task.status, task.status === "done" || task.status === "pending"), new Date(task.created_at).toLocaleString(), task.error || ""]));
+}
+
+function applyFormat(textarea, format) {
+  const formats = {
+    bold: ["**", "**", "bold text"],
+    italic: ["*", "*", "italic text"],
+    underline: ["__", "__", "underlined text"],
+    strike: ["~~", "~~", "strikethrough text"],
+    code: ["`", "`", "code"]
+  };
+  if (format === "quote") {
+    applyLinePrefix(textarea, "> ");
+    return;
+  }
+  if (format === "list") {
+    applyLinePrefix(textarea, "- ");
+    return;
+  }
+  const [before, after, fallback] = formats[format] || formats.bold;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? start;
+  const value = textarea.value;
+  const selected = value.slice(start, end) || fallback;
+  const next = `${before}${selected}${after}`;
+  textarea.value = `${value.slice(0, start)}${next}${value.slice(end)}`;
+  textarea.focus();
+  textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function applyLinePrefix(textarea, prefix) {
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? start;
+  const value = textarea.value;
+  const selected = value.slice(start, end) || "text";
+  const next = selected
+    .split("\n")
+    .map((line) => `${prefix}${line}`)
+    .join("\n");
+  textarea.value = `${value.slice(0, start)}${next}${value.slice(end)}`;
+  textarea.focus();
+  textarea.setSelectionRange(start, start + next.length);
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function setDeep(object, path, value) {
@@ -781,7 +838,13 @@ document.addEventListener("click", async (event) => {
   const tabButton = event.target.closest("[data-tab]");
   const panelButton = event.target.closest("[data-panel]");
   const commandButton = event.target.closest("[data-command-id]");
+  const formatButton = event.target.closest("[data-format]");
   try {
+    if (formatButton) {
+      const textarea = formatButton.closest(".field")?.querySelector("textarea");
+      if (textarea) applyFormat(textarea, formatButton.dataset.format);
+      return;
+    }
     if (tabButton) {
       state.tab = tabButton.dataset.tab;
       localStorage.setItem("tacky.tab", state.tab);
