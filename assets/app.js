@@ -8,6 +8,7 @@ const defaultGuildId = "";
 const defaultConfig = {
   guildId: defaultGuildId,
   ownerRoleId: "",
+  clovicUserId: "508729802459578368",
   memberRoleId: "",
   ticketBotRoleId: "",
   ticketPanelChannelId: "",
@@ -350,6 +351,7 @@ function renderConfig() {
         <h2>Roles</h2>
         <div class="form-grid">
           ${field("Owner Role", "ownerRoleId", c.ownerRoleId)}
+          ${field("Clovic Ping User", "clovicUserId", c.clovicUserId || "")}
           ${field("Member Role", "memberRoleId", c.memberRoleId)}
           ${field("Ticket Bot Role", "ticketBotRoleId", c.ticketBotRoleId)}
           ${field("Verify Role Override", "verification.roleId", c.verification?.roleId || "")}
