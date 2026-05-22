@@ -132,10 +132,23 @@ function lockedMessage() {
   if (status?.bot_client_id && String(status.bot_client_id) !== tackyBot.clientId) {
     return "This dashboard only works with Tacky Bot. The bot connected to this server is not Tacky.";
   }
+  if (status?.is_in_guild === true && !status?.last_seen_at) {
+    return "Tacky Bot is added to this server, but it has not reported online status yet.";
+  }
   if (status?.is_in_guild && status?.last_seen_at && Date.now() - new Date(status.last_seen_at).getTime() > 120000) {
     return "Tacky Bot has not checked in recently. Start the bot, then refresh this dashboard.";
   }
-  return "Tacky Bot is not added to this Discord server. Dashboard controls are locked.";
+  if (status?.is_in_guild === false) {
+    return "Tacky Bot is not added to this Discord server. Dashboard controls are locked.";
+  }
+  return "Tacky Bot status has not been confirmed for this Discord server yet. Start the bot, then refresh this dashboard.";
+}
+
+function lockedHelp() {
+  const status = state.status;
+  if (status?.is_in_guild === false) return "Invite Tacky Bot to the server, start the bot host, then refresh this dashboard.";
+  if (status?.bot_client_id && String(status.bot_client_id) !== tackyBot.clientId) return "Use the Tacky Bot application for this dashboard.";
+  return "Start or restart Tacky Bot so it can update Supabase, then refresh this dashboard.";
 }
 
 function requireTackyOnline() {
@@ -288,7 +301,7 @@ function renderLocked() {
     <section class="panel">
       <h2>Locked</h2>
       <p>${html(lockedMessage())}</p>
-      <p>Invite Tacky Bot to the server, start the bot host, then refresh this dashboard.</p>
+      <p>${html(lockedHelp())}</p>
     </section>`;
 }
 
