@@ -194,7 +194,6 @@ function renderAuth() {
           </div>
           <div class="actions">
             <button class="btn primary" type="submit" data-auth="signin">${icon("LogIn")} Sign In</button>
-            <button class="btn" type="submit" data-auth="signup">${icon("UserPlus")} Create Account</button>
             <button class="btn" type="button" id="change-supabase">${icon("Settings")} Supabase</button>
           </div>
         </form>
@@ -670,15 +669,12 @@ document.addEventListener("submit", async (event) => {
       return;
     }
     if (event.target.id === "auth-form") {
-      const submitter = event.submitter?.dataset.auth || "signin";
       const data = new FormData(event.target);
       const email = String(data.get("email")).trim();
       const password = String(data.get("password"));
-      const result = submitter === "signup"
-        ? await state.supabase.auth.signUp({ email, password })
-        : await state.supabase.auth.signInWithPassword({ email, password });
+      const result = await state.supabase.auth.signInWithPassword({ email, password });
       if (result.error) throw result.error;
-      toast(submitter === "signup" ? "Account created. Check email settings if confirmation is enabled." : "Signed in");
+      toast("Signed in");
       return;
     }
     if (event.target.id === "guild-form") {
