@@ -195,6 +195,19 @@ button:disabled {
   font-weight: 750;
 }
 
+.shell.locked .nav button.active {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.locked-panel {
+  min-height: 220px;
+  display: grid;
+  align-content: center;
+  border-left: 4px solid var(--red);
+}
+
 .btn.warn {
   background: var(--amber);
   color: var(--ink);

@@ -254,15 +254,16 @@ function renderAuth() {
 function renderApp() {
   const status = state.status;
   const botOk = isTackyOnline();
+  const navLocked = botOk ? "" : "disabled";
   app.innerHTML = `
-    <div class="shell">
+    <div class="shell ${botOk ? "" : "locked"}">
       <aside class="sidebar">
         <div class="logo-row">
           <img src="assets/clovic-logo.png" alt="Clovic logo">
           <div><strong>Tacky</strong><span>Clovic Control</span></div>
         </div>
         <nav class="nav">
-          ${navItems.map(([id, iconName, label]) => `<button class="${state.tab === id ? "active" : ""}" data-tab="${id}">${icon(iconName)} ${label}</button>`).join("")}
+          ${navItems.map(([id, iconName, label]) => `<button class="${state.tab === id ? "active" : ""}" data-tab="${id}" ${navLocked}>${icon(iconName)} ${label}</button>`).join("")}
         </nav>
       </aside>
       <main class="main">
@@ -284,7 +285,7 @@ function renderApp() {
 }
 
 function renderTab() {
-  if (!isTackyOnline() && !["overview", "bots", "setup"].includes(state.tab)) return renderLocked();
+  if (!isTackyOnline()) return renderLocked();
   if (state.tab === "overview") return renderOverview();
   if (state.tab === "config") return renderConfig();
   if (state.tab === "panels") return renderPanels();
@@ -298,10 +299,11 @@ function renderTab() {
 
 function renderLocked() {
   return `
-    <section class="panel">
-      <h2>Locked</h2>
+    <section class="panel locked-panel">
+      <h2>Dashboard Locked</h2>
       <p>${html(lockedMessage())}</p>
       <p>${html(lockedHelp())}</p>
+      <p>You can still change the Discord server ID, open that server, or refresh the status above. Editing unlocks automatically after Tacky Bot checks in again.</p>
     </section>`;
 }
 
@@ -846,6 +848,10 @@ document.addEventListener("click", async (event) => {
       return;
     }
     if (tabButton) {
+      if (!isTackyOnline()) {
+        toast("Dashboard locked until Tacky Bot is online");
+        return;
+      }
       state.tab = tabButton.dataset.tab;
       localStorage.setItem("tacky.tab", state.tab);
       paint();
