@@ -18,7 +18,7 @@ const defaultConfig = {
   dangerColor: 15680580,
   ticketPanel: {
     title: "Support Ticket Panel",
-    message: "Need help or want to contact us? Please choose the option that best fits your request from the dropdown below.\n\nGeneral Questions\nAsk about services, pricing, timelines, commissions, project details, or anything else you need help with.\n\nPartnership\nApply for a partnership with Clovix Development or discuss possible collaboration opportunities.\n\nBug Fixes\nReport something that is broken, not working correctly, giving errors, or needs troubleshooting.\n\nOther Fixes\nRequest small changes, setup help, configuration fixes, updates, or support that is not considered a bug.\n\nPlease choose the correct option and provide as much detail as possible so I can help you faster.",
+    message: "Need help or want to contact us? Please choose the option that best fits your request from the dropdown below.\n\nGeneral Questions\nAsk about services, pricing, timelines, commissions, project details, or anything else you need help with.\n\nPartnership\nApply for a partnership with Clovic Development or discuss possible collaboration opportunities.\n\nBug Fixes\nReport something that is broken, not working correctly, giving errors, or needs troubleshooting.\n\nOther Fixes\nRequest small changes, setup help, configuration fixes, updates, or support that is not considered a bug.\n\nPlease choose the correct option and provide as much detail as possible so I can help you faster.",
     placeholder: "Choose the type of ticket you need",
     types: [
       { label: "General Questions", value: "general_questions", description: "Services, pricing, timelines, commissions, and project details.", channelPrefix: "gq", displayPrefix: "GQ", emoji: "❔" },
@@ -38,7 +38,7 @@ const defaultConfig = {
     message: "Press the button or react with the emoji below to receive the member role.",
     emoji: "✅",
     buttonLabel: "Verify",
-    webhookName: "Clovix Verification",
+    webhookName: "Clovic Verification",
     webhookAvatarUrl: ""
   },
   commands: {
@@ -153,7 +153,7 @@ function renderSupabaseSetup() {
     <main class="auth-shell">
       <section class="auth-card">
         <div class="brand-pane">
-          <img src="assets/clovix-logo.png" alt="Clovix logo">
+          <img src="assets/clovic-logo.png" alt="Clovic logo">
           <h1>Tacky Dashboard</h1>
           <p>Connect this static dashboard to your Supabase project. The URL and anon key are safe to use in GitHub Pages when row level security is enabled.</p>
         </div>
@@ -178,7 +178,7 @@ function renderAuth() {
     <main class="auth-shell">
       <section class="auth-card">
         <div class="brand-pane">
-          <img src="assets/clovix-logo.png" alt="Clovix logo">
+          <img src="assets/clovic-logo.png" alt="Clovic logo">
           <h1>Tacky Dashboard</h1>
           <p>Log in with the email and password account you created in Supabase Auth. Give this link to a friend only after adding their email in the Admins tab.</p>
         </div>
@@ -209,8 +209,8 @@ function renderApp() {
     <div class="shell">
       <aside class="sidebar">
         <div class="logo-row">
-          <img src="assets/clovix-logo.png" alt="Clovix logo">
-          <div><strong>Tacky</strong><span>Clovix Control</span></div>
+          <img src="assets/clovic-logo.png" alt="Clovic logo">
+          <div><strong>Tacky</strong><span>Clovic Control</span></div>
         </div>
         <nav class="nav">
           ${navItems.map(([id, iconName, label]) => `<button class="${state.tab === id ? "active" : ""}" data-tab="${id}">${icon(iconName)} ${label}</button>`).join("")}
