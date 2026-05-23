@@ -17,6 +17,7 @@ const defaultConfig = {
   commissionCategoryId: "",
   commissionReviewChannelId: "",
   commissionCompletedLogChannelId: "",
+  reviewChannelId: "1507430464883789938",
   moderationLogChannelId: "",
   verifyChannelId: "",
   accentColor: 3339371,
@@ -366,6 +367,7 @@ function renderConfig() {
           ${field("Commission Category", "commissionCategoryId", c.commissionCategoryId)}
           ${field("Commission Review Channel", "commissionReviewChannelId", c.commissionReviewChannelId)}
           ${field("Completed Commission Logs", "commissionCompletedLogChannelId", c.commissionCompletedLogChannelId)}
+          ${field("Review Channel", "reviewChannelId", c.reviewChannelId || "")}
           ${field("Moderation Logs", "moderationLogChannelId", c.moderationLogChannelId)}
           ${field("Verify Channel", "verifyChannelId", c.verifyChannelId)}
         </div>
